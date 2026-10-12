@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: vle7
+  labels: { app.kubernetes.io/part-of: vle7, vle7/role: gateway, vle7/name: gateway }
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  selector:
+    matchLabels: { vle7/name: gateway }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/part-of: vle7, vle7/role: gateway, vle7/name: gateway }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: app
+          image: IMAGE_PLACEHOLDER
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: ROLE, value: gateway }
+            - { name: PORT, value: "3000" }
+            - { name: BACKUP_URL, value: "http://backup:3000" }
+            - { name: NODE_ENV, value: production }
+            - { name: POD_NAME, valueFrom: { fieldRef: { fieldPath: metadata.name } } }
+          envFrom:
+            - secretRef: { name: vle7-secrets }
+          ports: [{ containerPort: 3000 }]
+          readinessProbe: { httpGet: { path: /healthz, port: 3000 }, periodSeconds: 2, failureThreshold: 2 }
+          livenessProbe: { httpGet: { path: /livez, port: 3000 }, periodSeconds: 10, failureThreshold: 3 }
+          resources:
+            requests: { cpu: 20m, memory: 48Mi }
+            limits: { cpu: 300m, memory: 160Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: vle7
+spec:
+  type: NodePort
+  selector: { vle7/name: gateway }
+  ports:
+    - { port: 3000, targetPort: 3000, nodePort: 30080 }

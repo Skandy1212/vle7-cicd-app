@@ -1,0 +1,63 @@
+/* Shared design tokens and components for the app and the control panel. */
+:root {
+  --bg: #f4f6fb; --surface: #ffffff; --surface-2: #f0f3f9; --line: #e2e7f0; --text: #172033; --muted: #5d6b85;
+  --brand: #3d5afe; --brand-ink: #ffffff; --brand-soft: #e8ecff;
+  --ok: #12805c; --ok-soft: #dff5ec; --warn: #a15c00; --warn-soft: #fff1d6; --bad: #c62839; --bad-soft: #fde4e7;
+  --shadow: 0 1px 2px rgba(23, 32, 51, .06), 0 8px 24px rgba(23, 32, 51, .06);
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1424; --surface: #161e33; --surface-2: #1d2742; --line: #2a3556; --text: #e9edf7; --muted: #93a1c1;
+    --brand: #7b8cff; --brand-ink: #0e1424; --brand-soft: #232f5c;
+    --ok: #4fd1a1; --ok-soft: #12382d; --warn: #f5b84b; --warn-soft: #3a2d10; --bad: #ff7b8a; --bad-soft: #43151c;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+  }
+}
+* { box-sizing: border-box; }
+html { color-scheme: light dark; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+h1, h2, h3 { margin: 0; line-height: 1.2; }
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .86em; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; }
+
+.btn { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-weight: 600;
+  padding: 8px 14px; border-radius: 10px; cursor: pointer; transition: transform .06s, background .15s, border-color .15s; }
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--brand); outline-offset: 1px; }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--bad); border-color: var(--bad-soft); background: var(--bad-soft); }
+.btn.warn { color: var(--warn); border-color: var(--warn-soft); background: var(--warn-soft); }
+.btn.good { color: var(--ok); border-color: var(--ok-soft); background: var(--ok-soft); }
+.btn.small { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+input, select { width: 100%; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+input::placeholder { color: var(--muted); opacity: .7; }
+.field { margin-bottom: 14px; }
+
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 650; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.badge.ok { background: var(--ok-soft); color: var(--ok); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.bad { background: var(--bad-soft); color: var(--bad); }
+.badge.brand { background: var(--brand-soft); color: var(--brand); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+dialog { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--text); padding: 22px; width: min(520px, calc(100vw - 32px)); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgba(8, 12, 24, .55); backdrop-filter: blur(2px); }
+dialog h2 { margin-bottom: 4px; font-size: 20px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+#toasts { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; z-index: 50; max-width: calc(100vw - 32px); }
+.toast { background: var(--text); color: var(--bg); padding: 10px 14px; border-radius: 10px; box-shadow: var(--shadow); font-weight: 600; animation: pop .18s ease-out; }
+.toast.bad { background: var(--bad); color: #fff; }
+@keyframes pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

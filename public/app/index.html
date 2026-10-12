@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Campus Records</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233d5afe'/%3E%3Cpath d='M8 21V11l8-4 8 4v10l-8 4z' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/shared/base.css">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <main id="auth" class="auth">
+    <section class="hero">
+      <div class="brand"><span class="logo" aria-hidden="true"></span>Campus Records</div>
+      <h1>Your class, your data, <span>only yours.</span></h1>
+      <p class="muted">Track attendance and marks. Every account is kept on its own pod, with a live backup behind it.</p>
+      <ul class="points">
+        <li>Private to your login, never shown to anyone else</li>
+        <li>Backed up on every change</li>
+        <li>Keeps working when a pod fails</li>
+      </ul>
+    </section>
+    <section class="card auth-card">
+      <div class="tabs" role="tablist">
+        <button class="tab active" id="tab-login" role="tab" aria-selected="true">Sign in</button>
+        <button class="tab" id="tab-register" role="tab" aria-selected="false">Create account</button>
+      </div>
+      <form id="auth-form" autocomplete="on">
+        <div class="field"><label for="a-login">Login</label><input id="a-login" name="username" autocomplete="username" required minlength="3" maxlength="20" placeholder="e.g. skandesh"></div>
+        <div class="field"><label for="a-pass">Password</label><input id="a-pass" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="at least 6 characters"></div>
+        <p id="auth-err" class="err hidden" role="alert"></p>
+        <button class="btn primary wide" id="auth-submit" type="submit">Sign in</button>
+        <p class="muted small" id="auth-hint">Login: 3-20 characters, lowercase letters, digits and _</p>
+      </form>
+    </section>
+  </main>
+
+  <div id="dash" class="hidden">
+    <header class="top">
+      <div class="brand"><span class="logo" aria-hidden="true"></span>Campus Records</div>
+      <div class="spacer"></div>
+      <span class="badge brand" id="who"></span>
+      <button class="btn small" id="logout">Sign out</button>
+    </header>
+
+    <div class="wrap">
+      <section class="status card" id="status" aria-live="polite">
+        <span class="badge" id="srv"></span>
+        <span class="muted" id="srv-detail"></span>
+      </section>
+
+      <section class="stats" id="stats"></section>
+
+      <section class="grid2">
+        <div class="card">
+          <div class="row head">
+            <h2>Students</h2>
+            <span class="muted" id="count"></span>
+            <div class="spacer"></div>
+            <input id="q" type="search" class="search" placeholder="Search name or reg no" aria-label="Search">
+            <select id="sort" class="sort" aria-label="Sort">
+              <option value="name">Sort: name</option>
+              <option value="marks">Sort: marks (high first)</option>
+              <option value="attendance">Sort: attendance (low first)</option>
+            </select>
+            <button class="btn primary" id="add">+ Add student</button>
+          </div>
+          <div class="tablewrap">
+            <table id="tbl">
+              <thead><tr><th>Name</th><th>Reg no</th><th>Attendance</th><th>Marks</th><th></th></tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+          <p id="empty" class="empty hidden">No students yet. Add your first one with the button above.</p>
+        </div>
+        <div class="card">
+          <h2>Marks distribution</h2>
+          <p class="muted small">How many students fall in each band</p>
+          <div id="chart" class="chart"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <dialog id="dlg">
+    <form method="dialog" id="dlg-form">
+      <h2 id="dlg-title">Add student</h2>
+      <p class="muted small">Attendance and marks are percentages (0 to 100).</p>
+      <div class="field"><label for="f-name">Name</label><input id="f-name" required maxlength="60"></div>
+      <div class="field"><label for="f-reg">Reg no</label><input id="f-reg" required maxlength="20" pattern="[A-Za-z0-9_\-]{1,20}" title="letters, digits, - or _"></div>
+      <div class="two">
+        <div class="field"><label for="f-att">Attendance %</label><input id="f-att" type="number" min="0" max="100" step="0.1" required></div>
+        <div class="field"><label for="f-marks">Marks %</label><input id="f-marks" type="number" min="0" max="100" step="0.1" required></div>
+      </div>
+      <p id="dlg-err" class="err hidden" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="btn" type="button" id="dlg-cancel">Cancel</button>
+        <button class="btn primary" type="submit" id="dlg-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+  <div id="toasts" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control Panel</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172033'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='white' stroke-width='2.5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/shared/base.css">
+  <link rel="stylesheet" href="/control.css">
+</head>
+<body>
+  <main id="login" class="login">
+    <form class="card" id="login-form">
+      <h1>Control Panel</h1>
+      <p class="muted">Operator access to the pods behind Campus Records.</p>
+      <div class="field"><label for="pw">Admin password</label><input id="pw" type="password" autocomplete="current-password" required></div>
+      <p id="login-err" class="err hidden" role="alert"></p>
+      <button class="btn primary wide" type="submit">Sign in</button>
+    </form>
+  </main>
+
+  <div id="panel" class="hidden">
+    <header class="top">
+      <strong class="title">Control Panel</strong>
+      <span class="badge" id="orch"></span>
+      <div class="spacer"></div>
+      <label class="switch" title="When on, the gateway automatically copies data from the backup back into a shard that has lost it">
+        <input type="checkbox" id="autoheal"> <span>Auto-heal</span>
+      </label>
+      <button class="btn primary" id="create">+ Create pod</button>
+      <button class="btn small" id="logout">Sign out</button>
+    </header>
+
+    <div class="wrap">
+      <section>
+        <h2>Core</h2>
+        <div class="core" id="core"></div>
+      </section>
+      <section>
+        <h2>Shard pods <span class="muted" id="shard-count"></span></h2>
+        <p class="muted small">Each shard holds the data of the accounts routed to it. The backup holds everyone's data and answers when a shard cannot.</p>
+        <div class="shards" id="shards"></div>
+      </section>
+      <section id="parked-sec" class="hidden">
+        <h2>Parked in the backup</h2>
+        <p class="muted small">These accounts have no pod. The backup serves each one its own data until you recover them into a pod.</p>
+        <div class="shards" id="parked"></div>
+      </section>
+      <section>
+        <h2>Activity</h2>
+        <div class="card"><ul class="log" id="log"></ul></div>
+      </section>
+    </div>
+  </div>
+
+  <dialog id="dlg-create">
+    <form method="dialog" id="create-form">
+      <h2>Create a pod</h2>
+      <p class="muted small">New accounts go to the least-loaded pod, so an empty new pod receives the next sign-ups.</p>
+      <label class="opt"><input type="radio" name="cmode" value="fresh" checked> <span><b>Fresh pod</b><br><span class="muted small">Empty. Holds no accounts until people register.</span></span></label>
+      <label class="opt" id="opt-recover"><input type="radio" name="cmode" value="recover"> <span><b>Recover parked accounts</b><br><span class="muted small">The pod takes over accounts parked in the backup and is filled from it.</span></span></label>
+      <div class="field hidden" id="group-field"><label for="group">Parked group</label><select id="group"></select></div>
+      <div class="dialog-actions">
+        <button class="btn" type="button" id="create-cancel">Cancel</button>
+        <button class="btn primary" type="submit">Create</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-remove">
+    <form method="dialog" id="remove-form">
+      <h2 id="rm-title">Remove pod</h2>
+      <p class="muted small" id="rm-sub"></p>
+      <label class="opt"><input type="radio" name="strategy" value="replace" checked> <span><b>Replace with a new pod</b><br><span class="muted small">A new pod takes the same accounts and is filled from the backup.</span></span></label>
+      <label class="opt"><input type="radio" name="strategy" value="move"> <span><b>Move to the least-loaded existing pods</b><br><span class="muted small">Each account goes to whichever other pod has the fewest accounts.</span></span></label>
+      <label class="opt"><input type="radio" name="strategy" value="park"> <span><b>Park in the backup for later recovery</b><br><span class="muted small">No pod holds them. The backup keeps serving each login its own data. Recover them later when you create a pod.</span></span></label>
+      <div class="dialog-actions">
+        <button class="btn" type="button" id="rm-cancel">Cancel</button>
+        <button class="btn danger" type="submit">Remove pod</button>
+      </div>
+    </form>
+  </dialog>
+  <div id="toasts" aria-live="polite"></div>
+  <script src="/control.js"></script>
+</body>
+</html>

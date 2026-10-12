@@ -1,0 +1,39 @@
+# The control panel may manage workloads in THIS namespace only.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vle7-control
+  namespace: vle7
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vle7-control
+  namespace: vle7
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "delete", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vle7-control
+  namespace: vle7
+subjects:
+  - kind: ServiceAccount
+    name: vle7-control
+    namespace: vle7
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vle7-control
