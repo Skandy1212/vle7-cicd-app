@@ -105,7 +105,7 @@
     const assigned = String(meta.assigned).startsWith('parked:') ? 'parked in the backup' : meta.assigned;
     detail.textContent = onShard
       ? `Your account lives on ${meta.assigned}. Pod ${meta.pod}.`
-      : `Your account is assigned to ${assigned}, but ${REASONS[meta.reason] || 'that pod cannot serve you'}, so the backup is answering. Nothing is lost.`;
+         : (assigned === 'parked in the backup' ? 'Your account is parked in the backup (it has no pod), so the backup is answering. Nothing is lost.' : `Your account is assigned to ${assigned}, but ${REASONS[meta.reason] || 'that pod cannot serve you'}, so the backup is answering. Nothing is lost.`);
   }
 
   function render() {
