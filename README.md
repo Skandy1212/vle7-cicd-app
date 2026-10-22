@@ -31,3 +31,30 @@ The secret is never committed to git.
     node test/smoke.js
 
 No dependencies. Needs Node 22.
+
+## Monitoring (Prometheus + Grafana)
+What it adds: every pod serves `/metrics` on port 9102 (cluster-internal only, never on the NodePorts). Prometheus scrapes them every 15 s, plus kube-state-metrics (pod ready / restarts) and cAdvisor (CPU / memory). Grafana shows one dashboard, "VLE 7 - Campus Records on Kubernetes".
+
+One-time setup on the instance (pick your own password; do not commit it):
+```
+kubectl apply -f k8s/monitoring/00-namespace.yaml
+kubectl -n monitoring create secret generic grafana-admin --from-literal=admin-password='<your-password>'
+```
+Then push to GitHub. The pipeline's new Monitoring stage applies `k8s/monitoring/` and waits for the three Deployments. (Or by hand: `kubectl apply -f k8s/monitoring/`.)
+
+Open Grafana: NodePort 30300 (login `admin` / your password). If your network blocks high ports:
+`docker run -d --name vle7-fwd-3000 --restart unless-stopped --network host alpine/socat tcp-listen:3000,fork,reuseaddr tcp-connect:127.0.0.1:30300`
+then browse to `http://<instance-ip>:3000` (needs a security-group rule for that port from your IP only).
+
+Check without a browser: `kubectl -n monitoring port-forward svc/prometheus 9090:9090` then `curl -s localhost:9090/api/v1/targets | head`.
+Notes: Prometheus keeps 6 h of data in an emptyDir (lost if its pod restarts). Total extra memory limit is about 600 MiB; check `free -m` first on a 4 GB instance.
+
+## Student records: new fields and dashboards
+Each student record now also has optional `age` (16-40), `gender`, `course`, `year` (1-4) and `residence`. Old records without them still work (shown as "Not set"/"Unknown").
+
+Two ways to see the records as charts:
+1. **Grafana (Prometheus)**: dashboard "VLE 7 - Student records". The backup pod publishes anonymous aggregates (counts and averages per shard, never names or reg numbers) on its metrics port; the dashboard has a Shard filter. Deployed together with the monitoring stack (same `k8s/monitoring/` apply).
+2. **Control panel** (optional, :30090): "Records analytics" section, plus a marks-vs-attendance scatter that Prometheus cannot draw.
+
+Seed demo data (about 25 records per shard, with the new fields; safe to re-run):
+`DEMO_PW='<choose a password>' python3 seed.py`   (use `SHARDS=3` if you have three pods)

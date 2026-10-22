@@ -1,0 +1,1331 @@
+# Grafana: the dashboard UI. Datasource and dashboard are provisioned from ConfigMaps, so nothing is clicked together by hand.
+# Admin password comes from a Secret you create once (see README): kubectl -n monitoring create secret generic grafana-admin --from-literal=admin-password=...
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: grafana-provisioning, namespace: monitoring }
+data:
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.monitoring.svc:9090
+        isDefault: true
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: vle7
+        type: file
+        disableDeletion: true
+        options: { path: /var/lib/grafana/dashboards }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: grafana-dashboards, namespace: monitoring }
+data:
+  vle7-overview.json: |
+    {
+     "uid": "vle7-overview",
+     "title": "VLE 7 - Campus Records on Kubernetes",
+     "tags": [
+      "vle7"
+     ],
+     "timezone": "browser",
+     "schemaVersion": 39,
+     "version": 1,
+     "refresh": "10s",
+     "time": {
+      "from": "now-30m",
+      "to": "now"
+     },
+     "panels": [
+      {
+       "id": 1,
+       "title": "Pods ready",
+       "type": "stat",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum(kube_pod_status_ready{namespace=\"vle7\",condition=\"true\"})",
+         "legendFormat": "ready"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "thresholds": {
+          "mode": "absolute",
+          "steps": [
+           {
+            "color": "red",
+            "value": null
+           },
+           {
+            "color": "green",
+            "value": 1
+           }
+          ]
+         }
+        },
+        "overrides": []
+       },
+       "options": {},
+       "description": "Pods that pass their readiness probe right now."
+      },
+      {
+       "id": 2,
+       "title": "Pods NOT ready",
+       "type": "stat",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "count(kube_pod_status_ready{namespace=\"vle7\",condition=\"false\"} == 1) or vector(0)",
+         "legendFormat": "not ready"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "thresholds": {
+          "mode": "absolute",
+          "steps": [
+           {
+            "color": "green",
+            "value": null
+           },
+           {
+            "color": "red",
+            "value": 1
+           }
+          ]
+         }
+        },
+        "overrides": []
+       },
+       "options": {}
+      },
+      {
+       "id": 3,
+       "title": "Container restarts (total)",
+       "type": "stat",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"vle7\"})",
+         "legendFormat": "restarts"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "thresholds": {
+          "mode": "absolute",
+          "steps": [
+           {
+            "color": "green",
+            "value": null
+           },
+           {
+            "color": "orange",
+            "value": 1
+           },
+           {
+            "color": "red",
+            "value": 5
+           }
+          ]
+         }
+        },
+        "overrides": []
+       },
+       "options": {},
+       "description": "Restarts since the pods were created. Goes up when a container crashes or fails its liveness probe."
+      },
+      {
+       "id": 4,
+       "title": "Scrape targets up",
+       "type": "stat",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum(up{job=\"vle7-pods\"})",
+         "legendFormat": "app pods scraped"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "options": {},
+       "description": "How many app pods Prometheus is successfully collecting /metrics from."
+      },
+      {
+       "id": 5,
+       "title": "Request rate by role",
+       "type": "timeseries",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (role) (rate(vle7_http_requests_total[1m]))",
+         "legendFormat": "{{role}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "reqps"
+        },
+        "overrides": []
+       },
+       "options": {},
+       "description": "Requests per second served by each tier (gateway, shard, backup, control), including health probes."
+      },
+      {
+       "id": 6,
+       "title": "Errors (5xx) per second",
+       "type": "timeseries",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (role) (rate(vle7_http_requests_total{code=~\"5..\"}[1m]))",
+         "legendFormat": "{{role}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "reqps"
+        },
+        "overrides": []
+       },
+       "options": {},
+       "description": "Server errors. Flat zero is healthy; a spike during a deploy or a pod kill shows the impact."
+      },
+      {
+       "id": 7,
+       "title": "p95 latency of API calls",
+       "type": "timeseries",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "histogram_quantile(0.95, sum by (le, role) (rate(vle7_http_request_duration_seconds_bucket{route=\"api\"}[2m])))",
+         "legendFormat": "{{role}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "s"
+        },
+        "overrides": []
+       },
+       "options": {}
+      },
+      {
+       "id": 8,
+       "title": "Requests by route class",
+       "type": "timeseries",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (role, route) (rate(vle7_http_requests_total[1m]))",
+         "legendFormat": "{{role}} / {{route}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "reqps"
+        },
+        "overrides": []
+       },
+       "options": {}
+      },
+      {
+       "id": 9,
+       "title": "Container restarts per pod",
+       "type": "timeseries",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "kube_pod_container_status_restarts_total{namespace=\"vle7\"}",
+         "legendFormat": "{{pod}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "options": {}
+      },
+      {
+       "id": 10,
+       "title": "Pod ready state (1 = ready)",
+       "type": "timeseries",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "kube_pod_status_ready{namespace=\"vle7\",condition=\"true\"}",
+         "legendFormat": "{{pod}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "options": {},
+       "description": "Kill a shard from the control panel: its line drops to 0 and returns to 1 when self-healing finishes."
+      },
+      {
+       "id": 11,
+       "title": "Memory (working set) per pod",
+       "type": "timeseries",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"vle7\",container=\"app\"})",
+         "legendFormat": "{{pod}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "bytes"
+        },
+        "overrides": []
+       },
+       "options": {}
+      },
+      {
+       "id": 12,
+       "title": "CPU per pod (cores)",
+       "type": "timeseries",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"vle7\",container=\"app\"}[1m]))",
+         "legendFormat": "{{pod}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "options": {}
+      }
+     ]
+    }
+  vle7-records.json: |
+    {
+     "uid": "vle7-records",
+     "title": "VLE 7 - Student records",
+     "tags": [
+      "vle7",
+      "records"
+     ],
+     "timezone": "browser",
+     "schemaVersion": 39,
+     "version": 1,
+     "refresh": "15s",
+     "time": {
+      "from": "now-1h",
+      "to": "now"
+     },
+     "templating": {
+      "list": [
+       {
+        "name": "shard",
+        "label": "Shard",
+        "type": "query",
+        "datasource": {
+         "type": "prometheus",
+         "uid": "prometheus"
+        },
+        "query": {
+         "query": "label_values(vle7_records, shard)",
+         "refId": "shards"
+        },
+        "definition": "label_values(vle7_records, shard)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+         "selected": true,
+         "text": [
+          "All"
+         ],
+         "value": [
+          "$__all"
+         ]
+        },
+        "sort": 1
+       }
+      ]
+     },
+     "panels": [
+      {
+       "id": 1,
+       "title": "Records",
+       "type": "stat",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 5,
+        "h": 4
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum(vle7_records{shard=~\"$shard\"})",
+         "instant": true,
+         "range": false,
+         "legendFormat": "Records"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "decimals": 0
+        },
+        "overrides": []
+       },
+       "options": {
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value"
+       }
+      },
+      {
+       "id": 2,
+       "title": "Accounts",
+       "type": "stat",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 5,
+        "y": 0,
+        "w": 5,
+        "h": 4
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum(vle7_accounts{shard=~\"$shard\"})",
+         "instant": true,
+         "range": false,
+         "legendFormat": "Accounts"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "decimals": 0
+        },
+        "overrides": []
+       },
+       "options": {
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value"
+       }
+      },
+      {
+       "id": 3,
+       "title": "Avg marks",
+       "type": "stat",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 10,
+        "y": 0,
+        "w": 5,
+        "h": 4
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum((vle7_marks_avg{shard=~\"$shard\"}) * on(shard) (vle7_records{shard=~\"$shard\"}))/sum(vle7_records{shard=~\"$shard\"})",
+         "instant": true,
+         "range": false,
+         "legendFormat": "Avg marks"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "percent",
+         "decimals": 1
+        },
+        "overrides": []
+       },
+       "options": {
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value"
+       }
+      },
+      {
+       "id": 4,
+       "title": "Avg attendance",
+       "type": "stat",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 15,
+        "y": 0,
+        "w": 5,
+        "h": 4
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum((vle7_attendance_avg{shard=~\"$shard\"}) * on(shard) (vle7_records{shard=~\"$shard\"}))/sum(vle7_records{shard=~\"$shard\"})",
+         "instant": true,
+         "range": false,
+         "legendFormat": "Avg attendance"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "percent",
+         "decimals": 1
+        },
+        "overrides": []
+       },
+       "options": {
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value"
+       }
+      },
+      {
+       "id": 5,
+       "title": "Under 75% attendance",
+       "type": "stat",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum(vle7_records_low_attendance{shard=~\"$shard\"})",
+         "instant": true,
+         "range": false,
+         "legendFormat": "Under 75% attendance"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "decimals": 0
+        },
+        "overrides": []
+       },
+       "options": {
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value"
+       },
+       "description": "Students below the 75% attendance line."
+      },
+      {
+       "id": 6,
+       "title": "Records per shard",
+       "type": "bargauge",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 8,
+        "h": 7
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "vle7_records{shard=~\"$shard\"}",
+         "instant": true,
+         "range": false,
+         "legendFormat": "{{shard}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "min": 0,
+         "color": {
+          "mode": "fixed",
+          "fixedColor": "blue"
+         }
+        },
+        "overrides": []
+       },
+       "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        },
+        "namePlacement": "auto",
+        "minVizHeight": 16
+       },
+       "description": "Does each shard hold a similar amount of data?"
+      },
+      {
+       "id": 7,
+       "title": "Gender mix",
+       "type": "piechart",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 8,
+        "y": 4,
+        "w": 8,
+        "h": 7
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (gender) (vle7_records_by_gender{shard=~\"$shard\"})",
+         "instant": true,
+         "range": false,
+         "legendFormat": "{{gender}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "color": {
+          "mode": "palette-classic"
+         }
+        },
+        "overrides": []
+       },
+       "options": {
+        "pieType": "donut",
+        "displayLabels": [
+         "value"
+        ],
+        "legend": {
+         "displayMode": "table",
+         "placement": "right",
+         "values": [
+          "value",
+          "percent"
+         ]
+        },
+        "tooltip": {
+         "mode": "single"
+        },
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        }
+       }
+      },
+      {
+       "id": 8,
+       "title": "Gender by shard",
+       "type": "bargauge",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 16,
+        "y": 4,
+        "w": 8,
+        "h": 7
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "vle7_records_by_gender{shard=~\"$shard\",gender!=\"Unknown\"} > 0",
+         "instant": true,
+         "range": false,
+         "legendFormat": "{{shard}} \u00b7 {{gender}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "min": 0,
+         "color": {
+          "mode": "fixed",
+          "fixedColor": "blue"
+         }
+        },
+        "overrides": []
+       },
+       "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        },
+        "namePlacement": "auto",
+        "minVizHeight": 16
+       }
+      },
+      {
+       "id": 9,
+       "title": "Students by course",
+       "type": "bargauge",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 8,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (course) (vle7_records_by_course{shard=~\"$shard\"}) > 0",
+         "instant": true,
+         "range": false,
+         "legendFormat": "{{course}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "min": 0,
+         "color": {
+          "mode": "fixed",
+          "fixedColor": "blue"
+         }
+        },
+        "overrides": []
+       },
+       "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        },
+        "namePlacement": "auto",
+        "minVizHeight": 16
+       }
+      },
+      {
+       "id": 10,
+       "title": "Average marks by course",
+       "type": "bargauge",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 8,
+        "y": 11,
+        "w": 8,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (course) (vle7_marks_avg_by_course{shard=~\"$shard\"} * on(shard, course) vle7_records_by_course{shard=~\"$shard\"}) / sum by (course) (vle7_records_by_course{shard=~\"$shard\",course!=\"Unknown\"})",
+         "instant": true,
+         "range": false,
+         "legendFormat": "{{course}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "percent",
+         "min": 0,
+         "max": 100,
+         "color": {
+          "mode": "fixed",
+          "fixedColor": "blue"
+         }
+        },
+        "overrides": []
+       },
+       "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        },
+        "namePlacement": "auto",
+        "minVizHeight": 16
+       }
+      },
+      {
+       "id": 11,
+       "title": "Residence",
+       "type": "piechart",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 16,
+        "y": 11,
+        "w": 8,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (residence) (vle7_records_by_residence{shard=~\"$shard\"}) > 0",
+         "instant": true,
+         "range": false,
+         "legendFormat": "{{residence}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "color": {
+          "mode": "palette-classic"
+         }
+        },
+        "overrides": []
+       },
+       "options": {
+        "pieType": "donut",
+        "displayLabels": [
+         "value"
+        ],
+        "legend": {
+         "displayMode": "table",
+         "placement": "right",
+         "values": [
+          "value",
+          "percent"
+         ]
+        },
+        "tooltip": {
+         "mode": "single"
+        },
+        "reduceOptions": {
+         "calcs": [
+          "lastNotNull"
+         ],
+         "fields": "",
+         "values": false
+        }
+       }
+      },
+      {
+       "id": 12,
+       "title": "Age",
+       "type": "barchart",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 8,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (age) (vle7_records_by_age{shard=~\"$shard\"})",
+         "instant": true,
+         "range": false,
+         "legendFormat": "",
+         "format": "table"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "min": 0,
+         "color": {
+          "mode": "fixed",
+          "fixedColor": "blue"
+         }
+        },
+        "overrides": []
+       },
+       "options": {
+        "xField": "age",
+        "orientation": "vertical",
+        "showValue": "always",
+        "legend": {
+         "showLegend": false,
+         "displayMode": "list",
+         "placement": "bottom"
+        },
+        "tooltip": {
+         "mode": "single"
+        },
+        "barWidth": 0.7,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0
+       },
+       "transformations": [
+        {
+         "id": "organize",
+         "options": {
+          "excludeByName": {
+           "Time": true
+          },
+          "renameByName": {
+           "Value": "Students"
+          }
+         }
+        },
+        {
+         "id": "sortBy",
+         "options": {
+          "sort": [
+           {
+            "field": "age"
+           }
+          ]
+         }
+        }
+       ]
+      },
+      {
+       "id": 13,
+       "title": "Year of study",
+       "type": "barchart",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 8,
+        "y": 19,
+        "w": 8,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (year) (vle7_records_by_year{shard=~\"$shard\",year!=\"0\"})",
+         "instant": true,
+         "range": false,
+         "legendFormat": "",
+         "format": "table"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "min": 0,
+         "color": {
+          "mode": "fixed",
+          "fixedColor": "blue"
+         }
+        },
+        "overrides": []
+       },
+       "options": {
+        "xField": "year",
+        "orientation": "vertical",
+        "showValue": "always",
+        "legend": {
+         "showLegend": false,
+         "displayMode": "list",
+         "placement": "bottom"
+        },
+        "tooltip": {
+         "mode": "single"
+        },
+        "barWidth": 0.7,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0
+       },
+       "transformations": [
+        {
+         "id": "organize",
+         "options": {
+          "excludeByName": {
+           "Time": true
+          },
+          "renameByName": {
+           "Value": "Students"
+          }
+         }
+        },
+        {
+         "id": "sortBy",
+         "options": {
+          "sort": [
+           {
+            "field": "year"
+           }
+          ]
+         }
+        }
+       ]
+      },
+      {
+       "id": 14,
+       "title": "Marks bands (%)",
+       "type": "barchart",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 16,
+        "y": 19,
+        "w": 8,
+        "h": 8
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (marks) (vle7_records_by_marks{shard=~\"$shard\"})",
+         "instant": true,
+         "range": false,
+         "legendFormat": "",
+         "format": "table"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "min": 0,
+         "color": {
+          "mode": "fixed",
+          "fixedColor": "blue"
+         }
+        },
+        "overrides": []
+       },
+       "options": {
+        "xField": "marks",
+        "orientation": "vertical",
+        "showValue": "always",
+        "legend": {
+         "showLegend": false,
+         "displayMode": "list",
+         "placement": "bottom"
+        },
+        "tooltip": {
+         "mode": "single"
+        },
+        "barWidth": 0.7,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0
+       },
+       "transformations": [
+        {
+         "id": "organize",
+         "options": {
+          "excludeByName": {
+           "Time": true
+          },
+          "renameByName": {
+           "Value": "Students"
+          }
+         }
+        },
+        {
+         "id": "sortBy",
+         "options": {
+          "sort": [
+           {
+            "field": "marks"
+           }
+          ]
+         }
+        }
+       ]
+      },
+      {
+       "id": 15,
+       "title": "Records over time",
+       "type": "timeseries",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 7
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (shard) (vle7_records{shard=~\"$shard\"})",
+         "legendFormat": "{{shard}}"
+        }
+       ],
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short",
+         "min": 0,
+         "custom": {
+          "lineWidth": 2,
+          "fillOpacity": 10
+         }
+        },
+        "overrides": []
+       },
+       "options": {}
+      }
+     ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: grafana, namespace: monitoring }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: grafana } }
+  template:
+    metadata: { labels: { app: grafana } }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 472, fsGroup: 472, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.3.0
+          ports: [{ name: web, containerPort: 3000 }]
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom: { secretKeyRef: { name: grafana-admin, key: admin-password } }
+            - { name: GF_USERS_ALLOW_SIGN_UP, value: "false" }
+            - { name: GF_ANALYTICS_REPORTING_ENABLED, value: "false" }
+            - { name: GF_ANALYTICS_CHECK_FOR_UPDATES, value: "false" }
+          readinessProbe: { httpGet: { path: /api/health, port: 3000 }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /api/health, port: 3000 }, periodSeconds: 15, failureThreshold: 4 }
+          resources:
+            requests: { cpu: 50m, memory: 96Mi }
+            limits: { cpu: 300m, memory: 256Mi }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: ["ALL"] } }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/grafana }
+            - { name: provisioning-ds, mountPath: /etc/grafana/provisioning/datasources/datasource.yaml, subPath: datasource.yaml }
+            - { name: provisioning-ds, mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml, subPath: dashboards.yaml }
+            - { name: dashboards, mountPath: /var/lib/grafana/dashboards }
+      volumes:
+        - { name: data, emptyDir: {} }
+        - { name: provisioning-ds, configMap: { name: grafana-provisioning } }
+        - { name: dashboards, configMap: { name: grafana-dashboards } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: grafana, namespace: monitoring }
+spec:
+  type: NodePort
+  selector: { app: grafana }
+  ports: [{ name: web, port: 3000, targetPort: 3000, nodePort: 30300 }]

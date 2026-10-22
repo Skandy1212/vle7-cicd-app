@@ -67,7 +67,7 @@
           </div>
           <div class="tablewrap">
             <table id="tbl">
-              <thead><tr><th>Name</th><th>Reg no</th><th>Attendance</th><th>Marks</th><th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Reg no</th><th>Course</th><th>Yr</th><th>Age</th><th>Gender</th><th>Attendance</th><th>Marks</th><th></th></tr></thead>
               <tbody id="rows"></tbody>
             </table>
           </div>
@@ -77,6 +77,10 @@
           <h2>Marks distribution</h2>
           <p class="muted small">How many students fall in each band</p>
           <div id="chart" class="chart"></div>
+          <h2 class="gap">By course</h2>
+          <div id="chart-course" class="chart"></div>
+          <h2 class="gap">By gender</h2>
+          <div id="chart-gender" class="chart"></div>
         </div>
       </section>
     </div>
@@ -85,9 +89,18 @@
   <dialog id="dlg">
     <form method="dialog" id="dlg-form">
       <h2 id="dlg-title">Add student</h2>
-      <p class="muted small">Attendance and marks are percentages (0 to 100).</p>
+      <p class="muted small">Attendance and marks are percentages (0 to 100). Age, gender, course, year and residence are optional.</p>
       <div class="field"><label for="f-name">Name</label><input id="f-name" required maxlength="60"></div>
       <div class="field"><label for="f-reg">Reg no</label><input id="f-reg" required maxlength="20" pattern="[A-Za-z0-9_\-]{1,20}" title="letters, digits, - or _"></div>
+      <div class="two">
+        <div class="field"><label for="f-age">Age</label><input id="f-age" type="number" min="16" max="40" step="1" placeholder="e.g. 20"></div>
+        <div class="field"><label for="f-gender">Gender</label><select id="f-gender"><option value="">Not set</option><option>Female</option><option>Male</option><option>Other</option></select></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="f-course">Course</label><select id="f-course"><option value="">Not set</option><option>CSE</option><option>IT</option><option>AI &amp; DS</option><option>ECE</option><option>EEE</option><option>Mechanical</option><option>Civil</option></select></div>
+        <div class="field"><label for="f-year">Year</label><select id="f-year"><option value="">Not set</option><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option></select></div>
+      </div>
+      <div class="field"><label for="f-res">Residence</label><select id="f-res"><option value="">Not set</option><option>Hostel</option><option>Day scholar</option></select></div>
       <div class="two">
         <div class="field"><label for="f-att">Attendance %</label><input id="f-att" type="number" min="0" max="100" step="0.1" required></div>
         <div class="field"><label for="f-marks">Marks %</label><input id="f-marks" type="number" min="0" max="100" step="0.1" required></div>

@@ -105,7 +105,7 @@
     const assigned = String(meta.assigned).startsWith('parked:') ? 'parked in the backup' : meta.assigned;
     detail.textContent = onShard
       ? `Your account lives on ${meta.assigned}. Pod ${meta.pod}.`
-         : (assigned === 'parked in the backup' ? 'Your account is parked in the backup (it has no pod), so the backup is answering. Nothing is lost.' : `Your account is assigned to ${assigned}, but ${REASONS[meta.reason] || 'that pod cannot serve you'}, so the backup is answering. Nothing is lost.`);
+      : (assigned === 'parked in the backup' ? 'Your account is parked in the backup (it has no pod), so the backup is answering. Nothing is lost.' : `Your account is assigned to ${assigned}, but ${REASONS[meta.reason] || 'that pod cannot serve you'}, so the backup is answering. Nothing is lost.`);
   }
 
   function render() {
@@ -127,6 +127,19 @@
       return h('div', { class: 'cbar' }, h('div', { class: 'top2' }, h('span', {}, label), h('span', {}, String(c))), h('div', { class: 'track' }, fill));
     }));
 
+    // distribution charts: one row per value, bar length = share of students
+    const dist = (el, keys, get) => {
+      el.replaceChildren(...keys.map((k) => {
+        const c = students.filter((x) => get(x) === k).length;
+        const fill = h('i');
+        fill.style.width = (n ? (c / n) * 100 : 0) + '%';
+        return h('div', { class: 'cbar' }, h('div', { class: 'top2' }, h('span', {}, k), h('span', {}, String(c))), h('div', { class: 'track' }, fill));
+      }));
+    };
+    const COURSES = ['CSE', 'IT', 'AI & DS', 'ECE', 'EEE', 'Mechanical', 'Civil'];
+    dist($('chart-course'), [...COURSES, 'Not set'], (x) => (COURSES.includes(x.course) ? x.course : 'Not set'));
+    dist($('chart-gender'), ['Female', 'Male', 'Other', 'Not set'], (x) => (['Female', 'Male', 'Other'].includes(x.gender) ? x.gender : 'Not set'));
+
     // table
     const q = $('q').value.trim().toLowerCase();
     const sort = $('sort').value;
@@ -141,6 +154,10 @@
       return h('tr', {},
         h('td', { class: 'name' }, s.name),
         h('td', { class: 'mono' }, s.regno),
+        h('td', {}, s.course || '-'),
+        h('td', {}, s.year ? String(s.year) : '-'),
+        h('td', {}, s.age ? String(s.age) : '-'),
+        h('td', {}, s.gender || '-'),
         h('td', {}, h('span', { class: 'bar ' + (s.attendance < 75 ? 'low' : s.attendance < 85 ? 'mid' : '') }, fill), fmt(s.attendance) + '%'),
         h('td', {}, h('span', { class: 'badge ' + (s.marks >= 60 ? 'ok' : s.marks >= 40 ? 'warn' : 'bad') }, fmt(s.marks) + '%')),
         h('td', { class: 'actions' },
@@ -158,6 +175,9 @@
     $('dlg-title').textContent = s ? 'Edit student' : 'Add student';
     $('f-name').value = s ? s.name : ''; $('f-reg').value = s ? s.regno : '';
     $('f-att').value = s ? s.attendance : ''; $('f-marks').value = s ? s.marks : '';
+    $('f-age').value = s && s.age ? s.age : ''; $('f-gender').value = s && s.gender ? s.gender : '';
+    $('f-course').value = s && s.course ? s.course : ''; $('f-year').value = s && s.year ? String(s.year) : '';
+    $('f-res').value = s && s.residence ? s.residence : '';
     $('dlg-err').classList.add('hidden');
     $('dlg').showModal(); $('f-name').focus();
   }
@@ -165,7 +185,8 @@
   $('dlg-cancel').addEventListener('click', () => $('dlg').close());
   $('dlg-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const body = { name: $('f-name').value, regno: $('f-reg').value, attendance: $('f-att').value, marks: $('f-marks').value };
+    const body = { name: $('f-name').value, regno: $('f-reg').value, attendance: $('f-att').value, marks: $('f-marks').value,
+      age: $('f-age').value, gender: $('f-gender').value, course: $('f-course').value, year: $('f-year').value, residence: $('f-res').value };
     $('dlg-save').disabled = true;
     try {
       const r = editing ? await api('PUT', '/api/students/' + editing.id, body) : await api('POST', '/api/students', body);

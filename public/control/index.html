@@ -7,6 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172033'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='white' stroke-width='2.5'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/shared/base.css">
   <link rel="stylesheet" href="/control.css">
+  <link rel="stylesheet" href="/analytics.css">
 </head>
 <body>
   <main id="login" class="login">
@@ -46,6 +47,14 @@
         <p class="muted small">These accounts have no pod. The backup serves each one its own data until you recover them into a pod.</p>
         <div class="shards" id="parked"></div>
       </section>
+      <section id="analytics">
+        <h2>Records analytics</h2>
+        <p class="muted small">What the students stored on each pod look like. Anonymous: names, reg numbers and logins are not shown here.</p>
+        <div class="an-head" id="an-filter" role="group" aria-label="Pod filter"></div>
+        <div class="an-kpis" id="an-kpis"></div>
+        <div class="an-grid" id="an-grid"></div>
+        <details class="an-table"><summary>Show data as a table</summary><div class="tablewrap" id="an-table"></div></details>
+      </section>
       <section>
         <h2>Activity</h2>
         <div class="card"><ul class="log" id="log"></ul></div>
@@ -82,5 +91,6 @@
   </dialog>
   <div id="toasts" aria-live="polite"></div>
   <script src="/control.js"></script>
+  <script src="/analytics.js"></script>
 </body>
 </html>

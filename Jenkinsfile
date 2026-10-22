@@ -1,4 +1,4 @@
-// Declarative pipeline: Checkout -> Test -> Build -> Push -> Deploy -> Verify
+// Declarative pipeline: Checkout -> Test -> Build -> Push -> Deploy -> Verify -> Monitoring
 pipeline {
   agent any
   options {
@@ -26,7 +26,7 @@ pipeline {
     stage('Test') {
       steps {
         // Runs the real roles as local processes and checks isolation, failover, recovery.
-        sh 'docker run --rm -v "$PWD":/w -w /w node:22-alpine node test/smoke.js'
+        sh 'docker run --rm -v "$PWD":/w -w /w node:22-alpine sh -c "node test/smoke.js && node test/metrics.js"'
       }
     }
     stage('Build') {
@@ -62,6 +62,23 @@ pipeline {
           curl -fsS http://localhost:30090/healthz
           echo
           kubectl -n "$NS" get pods -o wide
+        '''
+      }
+    }
+    stage('Monitoring') {
+      // Prometheus + Grafana live in their own namespace. Applied only if the one-time grafana-admin secret exists,
+      // so the app pipeline never fails because monitoring was not set up.
+      steps {
+        sh '''
+          set -e
+          if kubectl -n monitoring get secret grafana-admin >/dev/null 2>&1; then
+            kubectl apply -f k8s/monitoring/00-namespace.yaml
+            kubectl apply -f k8s/monitoring/
+            for d in kube-state-metrics prometheus grafana; do kubectl -n monitoring rollout status deployment/$d --timeout=240s; done
+            kubectl -n monitoring get pods
+          else
+            echo "Monitoring skipped: create secret grafana-admin in namespace monitoring first (see README)."
+          fi
         '''
       }
     }

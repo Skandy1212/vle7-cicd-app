@@ -16,6 +16,8 @@ const S = Object.assign(empty(), C.loadJson(FILE, {}));
 S.settings = Object.assign({ autoheal: true, bootstrapped: false }, S.settings);
 const save = () => C.saveJson(FILE, S);
 const startedAt = Date.now();
+// Records analytics for Prometheus/Grafana (anonymous aggregates), served on the metrics port.
+require('./metrics').addCollector(() => require('./recordmetrics').render(S));
 
 const shardNum = (n) => Number(String(n).replace('shard-', '')) || 0;
 
@@ -59,6 +61,17 @@ async function handle(req, res) {
       records: Object.values(S.data).reduce((n, l) => n + l.length, 0),
       shards: S.shards.length, uptime: Math.round((Date.now() - startedAt) / 1000),
     });
+  }
+  // Anonymous rows for the control panel's analytics: no names, no reg numbers, no logins.
+  if (m === 'GET' && p === '/internal/analytics') {
+    const rows = [];
+    for (const [login, list] of Object.entries(S.data)) {
+      const route = S.routes[login] || 'unassigned';
+      for (const r of list) rows.push({ route, age: r.age, gender: r.gender, course: r.course, year: r.year, residence: r.residence, marks: r.marks, attendance: r.attendance });
+    }
+    const accounts = {};
+    for (const route of Object.values(S.routes)) accounts[route] = (accounts[route] || 0) + 1;
+    return C.send(res, 200, { rows, accounts, shards: S.shards.map((x) => x.name) });
   }
   if (m === 'GET' && p === '/internal/state') {
     return C.send(res, 200, {

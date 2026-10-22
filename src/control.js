@@ -219,6 +219,11 @@ async function api(req, res, url) {
   if (!isAdmin(req)) return C.send(res, 401, { error: 'admin sign-in required' });
   if (m === 'GET' && url.pathname === '/api/admin/me') return C.send(res, 200, { ok: true, orchestrator: orch.kind });
   if (m === 'GET' && url.pathname === '/api/overview') return C.send(res, 200, await overview());
+  if (m === 'GET' && url.pathname === '/api/analytics') {
+    const r = await backup('/internal/analytics').catch(() => null);
+    if (!r || r.status !== 200) throw C.bad('backup is unreachable, analytics unavailable', 503);
+    return C.send(res, 200, r.json);
+  }
 
   const body = m === 'POST' ? await C.readJson(req) : {};
   if (m === 'POST' && url.pathname === '/api/shards') return C.send(res, 200, await actCreate(body));

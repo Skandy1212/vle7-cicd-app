@@ -118,6 +118,24 @@ function num(v, label) {
   if (v === '' || v === null || !Number.isFinite(n) || n < 0 || n > 100) throw bad(label + ' must be a number from 0 to 100');
   return Math.round(n * 10) / 10;
 }
+// Optional profile fields (added after the first release): old records simply do not have them.
+const GENDERS = ['Female', 'Male', 'Other'];
+const COURSES = ['CSE', 'IT', 'AI & DS', 'ECE', 'EEE', 'Mechanical', 'Civil'];
+const RESIDENCES = ['Hostel', 'Day scholar'];
+const isBlank = (v) => v === '' || v === null;
+function optInt(b, out, key, lo, hi, label, partial) {
+  if (b[key] === undefined) return;
+  if (isBlank(b[key])) { if (partial) out[key] = null; return; }
+  const n = Number(b[key]);
+  if (!Number.isInteger(n) || n < lo || n > hi) throw bad(`${label} must be a whole number from ${lo} to ${hi}`);
+  out[key] = n;
+}
+function optEnum(b, out, key, list, label, partial) {
+  if (b[key] === undefined) return;
+  if (isBlank(b[key])) { if (partial) out[key] = null; return; }
+  if (!list.includes(b[key])) throw bad(`${label} must be one of: ${list.join(', ')}`);
+  out[key] = b[key];
+}
 function cleanStudent(b, partial = false) {
   const out = {};
   if (!partial || b.name !== undefined) {
@@ -132,8 +150,14 @@ function cleanStudent(b, partial = false) {
   }
   if (!partial || b.attendance !== undefined) out.attendance = num(b.attendance, 'attendance');
   if (!partial || b.marks !== undefined) out.marks = num(b.marks, 'marks');
+  optInt(b, out, 'age', 16, 40, 'age', partial);
+  optEnum(b, out, 'gender', GENDERS, 'gender', partial);
+  optEnum(b, out, 'course', COURSES, 'course', partial);
+  optInt(b, out, 'year', 1, 4, 'year', partial);
+  optEnum(b, out, 'residence', RESIDENCES, 'residence', partial);
   return out;
 }
+const dropNulls = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null));
 function applyOp(list, op) {
   if (!op || typeof op !== 'object') throw bad('invalid operation');
   if (op.type === 'add') {
@@ -146,7 +170,7 @@ function applyOp(list, op) {
     const i = list.findIndex((s) => s.id === op.id);
     if (i < 0) throw bad('student not found', 404);
     const next = list.slice();
-    next[i] = { ...list[i], ...cleanStudent(op.fields || {}, true) };
+    next[i] = dropNulls({ ...list[i], ...cleanStudent(op.fields || {}, true) });
     return next;
   }
   if (op.type === 'delete') {

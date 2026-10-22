@@ -91,6 +91,24 @@ async function main() {
   check('shards refuse requests without the internal token', (await fetch('http://127.0.0.1:4410/internal/stats')).status === 403);
   check('validation: marks 150 refused', (await A.post('/api/students', student(9, { marks: 150 }))).status === 400);
 
+  console.log('\n[profile fields + analytics]');
+  const p1 = await A.post('/api/students', student(11, { name: 'Profile One', age: 20, gender: 'Female', course: 'CSE', year: 3, residence: 'Hostel' }));
+  const prof = p1.json.students.find((x) => x.name === 'Profile One');
+  check('new fields are stored', prof && prof.age === 20 && prof.gender === 'Female' && prof.course === 'CSE' && prof.year === 3 && prof.residence === 'Hostel', prof);
+  check('bad gender refused', (await A.post('/api/students', student(12, { gender: 'x' }))).status === 400);
+  check('bad course refused', (await A.post('/api/students', student(13, { course: 'Underwater Basket' }))).status === 400);
+  check('age 12 refused', (await A.post('/api/students', student(14, { age: 12 }))).status === 400);
+  check('year 7 refused', (await A.post('/api/students', student(15, { year: 7 }))).status === 400);
+  const up = await A.put('/api/students/' + prof.id, { course: '', age: 21 });
+  const prof2 = up.json.students.find((x) => x.id === prof.id);
+  check('update changes age and clears course', prof2 && prof2.age === 21 && !('course' in prof2) && prof2.gender === 'Female', prof2);
+  check('records without the new fields still work', (await A.get('/api/students')).json.students.some((x) => x.gender === undefined));
+  const an = await admin.get('/api/analytics');
+  check('analytics returns anonymous rows', an.status === 200 && Array.isArray(an.json.rows) && an.json.rows.length >= 3 && !JSON.stringify(an.json).includes('Profile One') && !JSON.stringify(an.json).includes('alice'), an.status);
+  check('analytics rows carry the pod and profile fields', an.json.rows.some((r) => r.route === 'shard-1' && r.gender === 'Female' && r.age === 21));
+  check('analytics needs admin sign-in', (await new Client(CP).get('/api/analytics')).status === 401);
+  await A.del('/api/students/' + prof.id);
+
   console.log('\n[create pod: 3 pods, new accounts spread one each]');
   const cr = await admin.post('/api/shards', { mode: 'fresh' });
   check('create fresh pod -> shard-3', cr.status === 200 && cr.json.name === 'shard-3', cr.json);
