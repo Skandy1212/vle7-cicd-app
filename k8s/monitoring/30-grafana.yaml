@@ -28,7 +28,7 @@ data:
   vle7-overview.json: |
     {
      "uid": "vle7-overview",
-     "title": "VLE 7 - Campus Records on Kubernetes",
+     "title": "VLE 7 - College Campus Records on Kubernetes",
      "tags": [
       "vle7"
      ],

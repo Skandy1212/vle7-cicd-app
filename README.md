@@ -1,4 +1,4 @@
-# Campus Records: Jenkins to Kubernetes CI/CD demo (PBL-3, VLE 7)
+# College Campus Records: Jenkins to Kubernetes CI/CD demo (PBL-3, VLE 7)
 
 One Docker image, four roles (`ROLE=gateway|shard|backup|control`).
 
@@ -33,7 +33,7 @@ The secret is never committed to git.
 No dependencies. Needs Node 22.
 
 ## Monitoring (Prometheus + Grafana)
-What it adds: every pod serves `/metrics` on port 9102 (cluster-internal only, never on the NodePorts). Prometheus scrapes them every 15 s, plus kube-state-metrics (pod ready / restarts) and cAdvisor (CPU / memory). Grafana shows one dashboard, "VLE 7 - Campus Records on Kubernetes".
+What it adds: every pod serves `/metrics` on port 9102 (cluster-internal only, never on the NodePorts). Prometheus scrapes them every 15 s, plus kube-state-metrics (pod ready / restarts) and cAdvisor (CPU / memory). Grafana shows one dashboard, "VLE 7 - College Campus Records on Kubernetes".
 
 One-time setup on the instance (pick your own password; do not commit it):
 ```

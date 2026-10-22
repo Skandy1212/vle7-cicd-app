@@ -1,7 +1,7 @@
 {
   "name": "vle7-cicd-app",
   "version": "1.0.0",
-  "description": "Campus Records: sharded-by-login demo app for a Jenkins to Kubernetes CI/CD pipeline",
+  "description": "College Campus Records: sharded-by-login demo app for a Jenkins to Kubernetes CI/CD pipeline",
   "private": true,
   "license": "MIT",
   "engines": { "node": ">=22" },
