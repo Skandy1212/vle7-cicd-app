@@ -58,3 +58,6 @@ Two ways to see the records as charts:
 
 Seed demo data (about 25 records per shard, with the new fields; safe to re-run):
 `DEMO_PW='<choose a password>' python3 seed.py`   (use `SHARDS=3` if you have three pods)
+
+
+small changes
